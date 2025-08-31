@@ -23,35 +23,52 @@ if not PINECONE_API_KEY or not GROQ_API_KEY:
 os.environ["PINECONE_API_KEY"] = PINECONE_API_KEY
 os.environ["GROQ_API_KEY"] = GROQ_API_KEY
 
-embeddings = download_hugging_face_embeddings()
-
-
+# Initialize components lazily to save memory
+embeddings = None
+docsearch = None
+retriever = None
+llm = None
+rag_chain = None
 index_name = "medicalchatbot"
 
-# Embed each chunk and upsert the embeddings into your Pinecone index.
-docsearch = PineconeVectorStore.from_existing_index(
-    index_name=index_name,
-    embedding=embeddings
-)
-
-retriever = docsearch.as_retriever(search_type="similarity", search_kwargs={"k":3})
-
-
-llm = ChatGroq(
-    groq_api_key=GROQ_API_KEY,
-    model_name="llama3-8b-8192",  
-    temperature=0.4,
-    max_tokens=500
-)
-prompt = ChatPromptTemplate.from_messages(
-    [
-        ("system", system_prompt),
-        ("human", "{input}"),
-    ]
-)
-
-question_answer_chain = create_stuff_documents_chain(llm, prompt)
-rag_chain = create_retrieval_chain(retriever, question_answer_chain)
+def initialize_components():
+    global embeddings, docsearch, retriever, llm, rag_chain
+    if embeddings is None:
+        print("Loading embeddings model...")
+        embeddings = download_hugging_face_embeddings()
+        gc.collect()
+    
+    if docsearch is None:
+        print("Initializing Pinecone connection...")
+        docsearch = PineconeVectorStore.from_existing_index(
+            index_name=index_name,
+            embedding=embeddings
+        )
+        retriever = docsearch.as_retriever(search_type="similarity", search_kwargs={"k":2})  # Reduced from 3 to 2
+        gc.collect()
+        
+    if llm is None:
+        print("Initializing Groq LLM...")
+        llm = ChatGroq(
+            groq_api_key=GROQ_API_KEY,
+            model_name="llama3-8b-8192",
+            temperature=0.4,
+            max_tokens=300  # Reduced from 500 to 300
+        )
+        gc.collect()
+        
+    if rag_chain is None:
+        print("Creating RAG chain...")
+        prompt = ChatPromptTemplate.from_messages(
+            [
+                ("system", system_prompt),
+                ("human", "{input}"),
+            ]
+        )
+        question_answer_chain = create_stuff_documents_chain(llm, prompt)
+        rag_chain = create_retrieval_chain(retriever, question_answer_chain)
+        print("Components initialized successfully!")
+        gc.collect()
 
 
 @app.route("/")
@@ -73,6 +90,9 @@ def chat():
     try:
         msg = request.form["msg"]
         print(f"Received message: {msg}")
+        
+        # Initialize components on first request
+        initialize_components()
         
         # Clear memory before processing
         gc.collect()
