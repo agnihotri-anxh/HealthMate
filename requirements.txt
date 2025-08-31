@@ -10,4 +10,3 @@ langchain_groq
 langchain_experimental
 langchain-huggingface
 huggingface_hub>=0.20.0
--e .
