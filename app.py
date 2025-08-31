@@ -8,6 +8,7 @@ from langchain_core.prompts import ChatPromptTemplate
 from dotenv import load_dotenv
 from src.prompt import *
 import os
+import gc
 
 app = Flask(__name__)
 
@@ -69,16 +70,29 @@ def health_check():
 
 @app.route("/get", methods=["GET", "POST"])
 def chat():
-    msg = request.form["msg"]
-    input = msg
-    print(input)
-    response = rag_chain.invoke({"input": msg})
-    print("Response : ", response["answer"])
-    return str(response["answer"])
+    try:
+        msg = request.form["msg"]
+        print(f"Received message: {msg}")
+        
+        # Clear memory before processing
+        gc.collect()
+        
+        response = rag_chain.invoke({"input": msg})
+        answer = response["answer"]
+        
+        # Clear memory after processing
+        gc.collect()
+        
+        print(f"Response: {answer}")
+        return str(answer)
+    except Exception as e:
+        print(f"Error in chat: {e}")
+        return "Sorry, I encountered an error. Please try again.", 500
 
 
 
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 8080))
-    app.run(host="0.0.0.0", port=port, debug=False)
+    print(f"Starting server on port {port}")
+    app.run(host="0.0.0.0", port=port, debug=False, threaded=True)
