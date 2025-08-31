@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HealthMate</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='style.css')}}"/>
+</head>
+
+<body>
+    <div class="chat-container">
+        <div class="header">
+            <h1>Personal Medical AI Assistant</h1>
+            <p>Powered by Groq • Llama 3.1 8B</p>
+        </div>
+
+        <div class="welcome" id="welcome">
+            <h2>Welcome to Your Medical AI Assistant</h2>
+            <p>I provide general medical information. This is not a substitute for professional medical advice.</p>
+        </div>
+
+        <div class="messages" id="messages"></div>
+
+        <form id="form" class="input-form">
+            <input type="text" id="input" name="msg" placeholder="Ask me about medical information..." required/>
+            <button type="submit"><i class="fas fa-paper-plane"></i></button>
+        </form>
+    </div>
+
+    <script>
+        const form = document.getElementById('form');
+        const input = document.getElementById('input');
+        const messages = document.getElementById('messages');
+        const welcome = document.getElementById('welcome');
+
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const message = input.value.trim();
+            if (!message) return;
+
+            welcome.style.display = 'none';
+            addMessage(message, 'user');
+            input.value = '';
+
+            fetch('/get', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                body: `msg=${encodeURIComponent(message)}`
+            })
+            .then(response => response.text())
+            .then(data => addMessage(data, 'bot'))
+            .catch(() => addMessage('An error occurred. Please try again.', 'bot'));
+        });
+
+        function addMessage(content, type) {
+            const div = document.createElement('div');
+            div.className = `message ${type}`;
+            div.innerHTML = `
+                <div class="text">${content}</div>
+                <div class="time">${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
+            `;
+            messages.appendChild(div);
+            messages.scrollTop = messages.scrollHeight;
+        }
+    </script>
+</body>
+</html>
