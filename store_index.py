@@ -19,7 +19,7 @@ embeddings = download_hugging_face_embeddings()
 
 pc = Pinecone(api_key=PINECONE_API_KEY)
 
-index_name = "healthmate"
+index_name = "medicalchatbot"  # Using existing index name
 
 
 # Check if index already exists, if not create it
