@@ -8,7 +8,6 @@ from langchain_core.prompts import ChatPromptTemplate
 from dotenv import load_dotenv
 from src.prompt import *
 import os
-import gc
 
 app = Flask(__name__)
 
@@ -23,52 +22,35 @@ if not PINECONE_API_KEY or not GROQ_API_KEY:
 os.environ["PINECONE_API_KEY"] = PINECONE_API_KEY
 os.environ["GROQ_API_KEY"] = GROQ_API_KEY
 
-# Initialize components lazily to save memory
-embeddings = None
-docsearch = None
-retriever = None
-llm = None
-rag_chain = None
+embeddings = download_hugging_face_embeddings()
+
+
 index_name = "medicalchatbot"
 
-def initialize_components():
-    global embeddings, docsearch, retriever, llm, rag_chain
-    if embeddings is None:
-        print("Loading embeddings model...")
-        embeddings = download_hugging_face_embeddings()
-        gc.collect()
-    
-    if docsearch is None:
-        print("Initializing Pinecone connection...")
-        docsearch = PineconeVectorStore.from_existing_index(
-            index_name=index_name,
-            embedding=embeddings
-        )
-        retriever = docsearch.as_retriever(search_type="similarity", search_kwargs={"k":2})  # Reduced from 3 to 2
-        gc.collect()
-        
-    if llm is None:
-        print("Initializing Groq LLM...")
-        llm = ChatGroq(
-            groq_api_key=GROQ_API_KEY,
-            model_name="llama3-8b-8192",
-            temperature=0.4,
-            max_tokens=300  # Reduced from 500 to 300
-        )
-        gc.collect()
-        
-    if rag_chain is None:
-        print("Creating RAG chain...")
-        prompt = ChatPromptTemplate.from_messages(
-            [
-                ("system", system_prompt),
-                ("human", "{input}"),
-            ]
-        )
-        question_answer_chain = create_stuff_documents_chain(llm, prompt)
-        rag_chain = create_retrieval_chain(retriever, question_answer_chain)
-        print("Components initialized successfully!")
-        gc.collect()
+# Embed each chunk and upsert the embeddings into your Pinecone index.
+docsearch = PineconeVectorStore.from_existing_index(
+    index_name=index_name,
+    embedding=embeddings
+)
+
+retriever = docsearch.as_retriever(search_type="similarity", search_kwargs={"k":3})
+
+
+llm = ChatGroq(
+    groq_api_key=GROQ_API_KEY,
+    model_name="llama3-8b-8192",  
+    temperature=0.4,
+    max_tokens=500
+)
+prompt = ChatPromptTemplate.from_messages(
+    [
+        ("system", system_prompt),
+        ("human", "{input}"),
+    ]
+)
+
+question_answer_chain = create_stuff_documents_chain(llm, prompt)
+rag_chain = create_retrieval_chain(retriever, question_answer_chain)
 
 
 @app.route("/")
@@ -87,32 +69,16 @@ def health_check():
 
 @app.route("/get", methods=["GET", "POST"])
 def chat():
-    try:
-        msg = request.form["msg"]
-        print(f"Received message: {msg}")
-        
-        # Initialize components on first request
-        initialize_components()
-        
-        # Clear memory before processing
-        gc.collect()
-        
-        response = rag_chain.invoke({"input": msg})
-        answer = response["answer"]
-        
-        # Clear memory after processing
-        gc.collect()
-        
-        print(f"Response: {answer}")
-        return str(answer)
-    except Exception as e:
-        print(f"Error in chat: {e}")
-        return "Sorry, I encountered an error. Please try again.", 500
+    msg = request.form["msg"]
+    input = msg
+    print(input)
+    response = rag_chain.invoke({"input": msg})
+    print("Response : ", response["answer"])
+    return str(response["answer"])
 
 
 
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 8080))
-    print(f"Starting server on port {port}")
-    app.run(host="0.0.0.0", port=port, debug=False, threaded=True)
+    app.run(host="0.0.0.0", port=port, debug=False)
