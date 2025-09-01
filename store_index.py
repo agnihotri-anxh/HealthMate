@@ -19,7 +19,7 @@ embeddings = download_hugging_face_embeddings()
 
 pc = Pinecone(api_key=PINECONE_API_KEY)
 
-index_name = "medicalchatbot"
+index_name = "healthmate"
 
 
 # Check if index already exists, if not create it
@@ -50,7 +50,7 @@ try:
         embedding=embeddings, 
     )
     print(f"Successfully uploaded {len(text_chunks)} chunks to Pinecone index '{index_name}'")
-    print("Your medical chatbot is now ready to use!")
+    print("Your HealthMate AI Assistant is now ready to use!")
 except Exception as e:
     print(f"Error uploading documents: {e}")
     raise e

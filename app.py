@@ -25,7 +25,7 @@ os.environ["GROQ_API_KEY"] = GROQ_API_KEY
 embeddings = download_hugging_face_embeddings()
 
 
-index_name = "medicalchatbot"
+index_name = "healthmate"
 
 # Embed each chunk and upsert the embeddings into your Pinecone index.
 docsearch = PineconeVectorStore.from_existing_index(
@@ -38,7 +38,7 @@ retriever = docsearch.as_retriever(search_type="similarity", search_kwargs={"k":
 
 llm = ChatGroq(
     groq_api_key=GROQ_API_KEY,
-    model_name="llama3-8b-8192",  
+    model_name="llama-3.1-8b-instant",  # HealthMate AI Model
     temperature=0.4,
     max_tokens=500
 )
@@ -63,7 +63,7 @@ def health_check():
     return jsonify({
         "status": "healthy",
         "timestamp": datetime.now().isoformat(),
-        "service": "Medical AI Assistant"
+        "service": "HealthMate AI Assistant"
     })
 
 
