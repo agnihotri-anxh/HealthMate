@@ -1,6 +1,8 @@
 # Personal Medical AI Assistant
 
 A medical chatbot powered by Groq's Llama 3.1 8B model with Pinecone vector database for intelligent medical information retrieval.
+<img width="1705" height="898" alt="image" src="https://github.com/user-attachments/assets/661b29dd-9334-438c-8fb5-e300f1b98949" />
+
 
 ## 🚀 Features
 
