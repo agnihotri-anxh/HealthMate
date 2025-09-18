@@ -18,8 +18,8 @@ jobs:
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.AWS_REGION }}
+          aws-secret-access-key: ${{ secrets.AWS_SEACRET_ACCESS_KEY_ID }}
+          aws-region: ${{ secrets.AWS_DEAFAULT_REGION }}
 
       - name: login to Amazon ECR
         id: login-ecr
@@ -29,7 +29,7 @@ jobs:
         id: build-image
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          ECR_REPOSITORY: ${{ secrets.AWS_ECR_REPO }}
+          ECR_REPOSITORY: ${{ secrets.ECR_REPO }}
           IMAGE_TAG: latest
           PINECONE_API_KEY: ${{ secrets.PINECONE_API_KEY }}
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
@@ -50,8 +50,8 @@ jobs:
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.AWS_REGION }}
+          aws-secret-access-key: ${{ secrets.AWS_SEACRET_ACCESS_KEY_ID }}
+          aws-region: ${{ secrets.AWS_DEAFAULT_REGION }}
 
       - name: login to Amazon ECR
         id: login-ecr
