@@ -57,13 +57,12 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
-      - name: Debug - Check image URI
-        run: |
-          echo "Image URI from previous job: ${{ needs.Continuous_Integration.outputs.image_uri }}"
-          
       - name: Run Docker Image to serve users
         run: |
-          IMAGE_URI="${{ needs.Continuous_Integration.outputs.image_uri }}"
+          ECR_REGISTRY="${{ steps.login-ecr.outputs.registry }}"
+          ECR_REPOSITORY="${{ secrets.ECR_REPO }}"
+          IMAGE_TAG="latest"
+          IMAGE_URI="$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
           echo "Using image: $IMAGE_URI"
           docker run -d \
             -e AWS_ACCESS_KEY_ID="${{ secrets.AWS_ACCESS_KEY_ID }}" \
