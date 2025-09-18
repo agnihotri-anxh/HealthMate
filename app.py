@@ -24,16 +24,26 @@ os.environ["GROQ_API_KEY"] = GROQ_API_KEY
 
 embeddings = download_hugging_face_embeddings()
 
+if embeddings is None:
+    print("Warning: Could not load embeddings model. The application will run in limited mode.")
+    docsearch = None
+else:
+    index_name = "medicalchatbot"  # Using existing index name
+    
+    # Embed each chunk and upsert the embeddings into your Pinecone index.
+    try:
+        docsearch = PineconeVectorStore.from_existing_index(
+            index_name=index_name,
+            embedding=embeddings
+        )
+    except Exception as e:
+        print(f"Warning: Could not connect to Pinecone index: {e}")
+        docsearch = None
 
-index_name = "medicalchatbot"  # Using existing index name
-
-# Embed each chunk and upsert the embeddings into your Pinecone index.
-docsearch = PineconeVectorStore.from_existing_index(
-    index_name=index_name,
-    embedding=embeddings
-)
-
-retriever = docsearch.as_retriever(search_type="similarity", search_kwargs={"k":3})
+if docsearch is not None:
+    retriever = docsearch.as_retriever(search_type="similarity", search_kwargs={"k":3})
+else:
+    retriever = None
 
 
 llm = ChatGroq(
@@ -50,7 +60,11 @@ prompt = ChatPromptTemplate.from_messages(
 )
 
 question_answer_chain = create_stuff_documents_chain(llm, prompt)
-rag_chain = create_retrieval_chain(retriever, question_answer_chain)
+
+if retriever is not None:
+    rag_chain = create_retrieval_chain(retriever, question_answer_chain)
+else:
+    rag_chain = None
 
 
 @app.route("/")
@@ -72,9 +86,16 @@ def chat():
     msg = request.form["msg"]
     input = msg
     print(input)
-    response = rag_chain.invoke({"input": msg})
-    print("Response : ", response["answer"])
-    return str(response["answer"])
+    
+    if rag_chain is not None:
+        response = rag_chain.invoke({"input": msg})
+        print("Response : ", response["answer"])
+        return str(response["answer"])
+    else:
+        # Fallback response when RAG chain is not available
+        fallback_response = f"I apologize, but I'm currently experiencing technical difficulties with my knowledge base. However, I can still help with general medical questions. You asked: '{msg}'. Please note that for specific medical advice, always consult with a healthcare professional."
+        print("Fallback Response : ", fallback_response)
+        return fallback_response
 
 
 

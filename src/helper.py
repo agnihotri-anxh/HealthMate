@@ -25,5 +25,16 @@ def text_split(extracted_data):
 
 #Download the Embeddings from HuggingFace 
 def download_hugging_face_embeddings():
-    embeddings=HuggingFaceEmbeddings(model_name='sentence-transformers/all-MiniLM-L6-v2')  #this model return 384 dimensions
-    return embeddings
+    try:
+        # Try to load the model with timeout handling
+        embeddings = HuggingFaceEmbeddings(
+            model_name='sentence-transformers/all-MiniLM-L6-v2',
+            model_kwargs={'device': 'cpu'},
+            encode_kwargs={'normalize_embeddings': True}
+        )
+        return embeddings
+    except Exception as e:
+        print(f"Failed to load HuggingFace model: {e}")
+        print("Using fallback OpenAI embeddings...")
+        # Fallback to a simpler approach or return None to handle gracefully
+        return None

@@ -1,7 +1,7 @@
 # Git
 .git
 .gitignore
-
+.Generative_AI_Project.egg-info
 # Python
 __pycache__
 *.pyc
